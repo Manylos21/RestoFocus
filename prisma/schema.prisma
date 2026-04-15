@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  RESTAURANT_ADMIN
+  SUPER_ADMIN
+}
+
+// Nouveau statut pour les commandes
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id               String       @id @default(uuid()) @db.Uuid
+  email            String       @unique
+  emailVerified    DateTime?
+  image            String?
+  passwordHash     String
+  nom              String
+  prenom           String
+  role             UserRole     @default(CUSTOMER)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  accounts         Account[]
+  sessions         Session[]
+  ownedRestaurants Restaurant[] @relation("RestaurantOwner")
+  orders           Order[]      // <-- NOUVEAU : Lien vers les commandes du client
+
+  @@index([role])
+}
+
+model Restaurant {
+  id             String      @id @default(uuid()) @db.Uuid
+  nom            String
+  slug           String      @unique
+  description    String?
+  adresse        String
+  proprietaireId String      @db.Uuid
+  proprietaire   User        @relation("RestaurantOwner", fields: [proprietaireId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  categories     Category[]
+  menuItems      MenuItem[]
+  orders         Order[]     // <-- NOUVEAU : Lien vers les commandes reçues par le restaurant
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([proprietaireId])
+}
+
+model Category {
+  id           String      @id @default(uuid()) @db.Uuid
+  nom          String
+  restaurantId String      @db.Uuid
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  menuItems    MenuItem[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([restaurantId])
+  @@unique([restaurantId, nom])
+}
+
+model MenuItem {
+  id           String      @id @default(uuid()) @db.Uuid
+  nom          String
+  description  String?
+  prix         Decimal     @db.Decimal(10, 2)
+  categoryId   String      @db.Uuid
+  restaurantId String      @db.Uuid
+  category     Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  orderItems   OrderItem[] // <-- NOUVEAU : Lien pour savoir dans quelles commandes ce plat a été acheté
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([restaurantId])
+}
+
+// ==========================================
+// NOUVEAUX MODÈLES : COMMANDES (PHASE 11)
+// ==========================================
+
+model Order {
+  id           String      @id @default(uuid()) @db.Uuid
+  status       OrderStatus @default(PENDING)
+  totalAmount  Decimal     @db.Decimal(10, 2)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  // Relations
+  userId       String      @db.Uuid
+  user         User        @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  restaurantId String      @db.Uuid
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  items        OrderItem[]
+
+  @@index([userId])
+  @@index([restaurantId])
+}
+
+model OrderItem {
+  id         String   @id @default(uuid()) @db.Uuid
+  quantity   Int
+  price      Decimal  @db.Decimal(10, 2) // Prix figé au moment de la commande
+
+  // Relations
+  orderId    String   @db.Uuid
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  menuItemId String   @db.Uuid
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([orderId])
+  @@index([menuItemId])
+}
+
+// ==========================================
+// MODÈLES D'AUTHENTIFICATION (Auth.js)
+// ==========================================
+
+model Account {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
