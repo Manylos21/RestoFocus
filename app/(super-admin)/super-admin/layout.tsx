@@ -10,52 +10,77 @@ export default async function SuperAdminLayout({
 }) {
   const session = await auth();
 
-  // Sécurité absolue : on revérifie le rôle côté serveur
   if (!session || session.user.role !== "SUPER_ADMIN") {
-    redirect("/");
+    redirect("/non-autorise");
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar Sombre (Identité "God Mode") */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold tracking-wider">RESTO<span className="text-blue-500">FOCUS</span></h1>
-          <p className="text-slate-400 text-xs mt-1">Super Admin Console</p>
-        </div>
-        <nav className="flex-1 px-4 space-y-2 mt-4">
-          <Link href="/super-admin" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
-            <LayoutDashboard size={20} />
-            Tableau de bord
-          </Link>
-          <Link href="/super-admin/restaurants" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
-            <Store size={20} />
-            Restaurants
-          </Link>
-          <Link href="/super-admin/parametres" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
-            <Settings size={20} />
-            Paramètres
-          </Link>
-        </nav>
-        <div className="p-4 border-t border-slate-800">
-          <div className="text-sm truncate mb-4 text-slate-300">{session.user.email}</div>
-          {/* Lien direct vers la route de déconnexion NextAuth */}
-          <a href="/api/auth/signout" className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors">
-            <LogOut size={18} />
-            Se déconnecter
-          </a>
-        </div>
-      </aside>
+    <div className="min-h-screen bg-neutral-100 text-neutral-900">
+      <div className="mx-auto flex min-h-screen max-w-[1600px]">
+        <aside className="w-full border-r border-neutral-800 bg-neutral-950 text-white lg:w-72">
+          <div className="border-b border-neutral-800 px-6 py-6">
+            <Link
+              href="/"
+              className="-m-2 block cursor-pointer rounded-2xl p-2 transition hover:bg-neutral-900"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-500">
+                RestoFocus
+              </p>
+              <h2 className="mt-2 text-xl font-bold text-white">Super Admin</h2>
+            </Link>
+          </div>
 
-      {/* Contenu Principal */}
-      <main className="flex-1 flex flex-col">
-        <header className="bg-white shadow-sm h-16 flex items-center px-8 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-700">Administration Globale</h2>
-        </header>
-        <div className="p-8 flex-1 overflow-auto">
+          <nav className="flex flex-col gap-2 p-4">
+            <Link
+              href="/super-admin"
+              className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-neutral-200 transition hover:bg-neutral-900 hover:text-white"
+            >
+              <LayoutDashboard className="h-5 w-5" />
+              Tableau de bord
+            </Link>
+
+            <Link
+              href="/super-admin/restaurants"
+              className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-neutral-200 transition hover:bg-neutral-900 hover:text-white"
+            >
+              <Store className="h-5 w-5" />
+              Restaurants
+            </Link>
+
+            <Link
+              href="/super-admin/parametres"
+              className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-neutral-200 transition hover:bg-neutral-900 hover:text-white"
+            >
+              <Settings className="h-5 w-5" />
+              Paramètres
+            </Link>
+          </nav>
+
+          <div className="mt-auto border-t border-neutral-800 p-4">
+            <p className="mb-3 px-2 text-sm text-neutral-400">{session.user.email}</p>
+            <Link
+              href="/api/auth/signout"
+              className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-neutral-200 transition hover:bg-neutral-900 hover:text-white"
+            >
+              <LogOut className="h-5 w-5" />
+              Se déconnecter
+            </Link>
+          </div>
+        </aside>
+
+        <main className="flex-1 p-6 lg:p-10">
+          <div className="mb-8">
+            <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-orange-600">
+              Administration globale
+            </p>
+            <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
+              Supervision de la plateforme
+            </h1>
+          </div>
+
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

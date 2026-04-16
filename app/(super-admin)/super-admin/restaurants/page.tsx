@@ -71,6 +71,14 @@ export default async function SuperAdminRestaurantsPage() {
           Comparez les restaurants par volume de réservations, commandes, revenus
           et qualité du catalogue.
         </p>
+        <div className="mt-6">
+          <Link
+          href="/super-admin/restaurants/nouveau"
+          className="rounded-full bg-orange-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-700"
+          >
+            Créer un compte chef
+          </Link>
+        </div>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-2">

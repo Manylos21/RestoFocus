@@ -1,45 +1,37 @@
 "use client";
 
-import {
-  CalendarDays,
-  ClipboardList,
-  LayoutDashboard,
-  Settings2,
-  UtensilsCrossed,
-} from "lucide-react";
+import { Building2, LayoutDashboard, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV = [
-  { href: "/espace-restaurant", label: "Tableau de bord", icon: LayoutDashboard },
-  { href: "/espace-restaurant/reservations", label: "Réservations", icon: CalendarDays },
-  { href: "/espace-restaurant/commandes", label: "Commandes", icon: ClipboardList },
-  { href: "/espace-restaurant/menu", label: "Mon Menu", icon: UtensilsCrossed },
-  { href: "/espace-restaurant/parametres", label: "Paramètres", icon: Settings2 },
+  { href: "/super-admin", label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/super-admin/restaurants", label: "Restaurants", icon: Building2 },
+  { href: "/super-admin/parametres", label: "Paramètres", icon: Settings2 },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
-  if (href === "/espace-restaurant") {
-    return pathname === "/espace-restaurant";
+  if (href === "/super-admin") {
+    return pathname === "/super-admin";
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function RestaurantAdminSidebar() {
+export function SuperAdminSidebar() {
   const pathname = usePathname();
 
   return (
     <aside className="w-full border-r border-neutral-200 bg-white lg:w-72">
       <div className="border-b border-neutral-200 px-6 py-6">
         <Link
-          href="/"
-          className="-m-2 block cursor-pointer rounded-2xl p-2 transition hover:bg-neutral-50"
+          href="/super-admin"
+          className="-m-2 block rounded-2xl p-2 transition hover:bg-neutral-50"
         >
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600">
             RestoFocus
           </p>
-          <h2 className="mt-2 text-xl font-bold text-neutral-900">Restaurant</h2>
+          <h2 className="mt-2 text-xl font-bold text-neutral-900">Super Admin</h2>
         </Link>
       </div>
 
