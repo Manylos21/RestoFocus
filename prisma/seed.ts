@@ -6,6 +6,8 @@ const prisma = new PrismaClient();
 
 async function main() {
   await prisma.$transaction([
+    prisma.orderItem.deleteMany(),
+    prisma.order.deleteMany(),
     prisma.menuItem.deleteMany(),
     prisma.category.deleteMany(),
     prisma.restaurant.deleteMany(),
@@ -37,6 +39,16 @@ async function main() {
     },
   });
 
+  await prisma.user.create({
+    data: {
+      email: "client@restofocus.com",
+      passwordHash,
+      nom: "Dupont",
+      prenom: "Client",
+      role: "CUSTOMER",
+    },
+  });
+
   const restaurant = await prisma.restaurant.create({
     data: {
       nom: "Le Bistro Parisien",
@@ -44,6 +56,13 @@ async function main() {
       description: "Cuisine française de saison en plein cœur de Paris.",
       adresse: "12 Rue de Rivoli, 75001 Paris",
       proprietaireId: chef.id,
+      telephone: "+33 1 42 00 00 00",
+      emailPublic: "contact@bistroparisien.fr",
+      servesCuisine: "Cuisine française",
+      acceptsReservations: true,
+      reservationUrl: "/reservation/le-bistro-parisien",
+      openingHours: "Lun-Dim 12:00-14:30, 19:00-22:30",
+      googleMapsUrl: "https://maps.google.com/?q=12+Rue+de+Rivoli,+75001+Paris",
     },
   });
 
@@ -57,6 +76,13 @@ async function main() {
   const categoryPlats = await prisma.category.create({
     data: {
       nom: "Plats",
+      restaurantId: restaurant.id,
+    },
+  });
+
+  const categoryDesserts = await prisma.category.create({
+    data: {
+      nom: "Desserts",
       restaurantId: restaurant.id,
     },
   });
@@ -81,13 +107,17 @@ async function main() {
         nom: "Tarte tatin",
         description: "Pommes caramélisées, crème fraîche",
         prix: new Prisma.Decimal("9.50"),
-        categoryId: categoryPlats.id,
+        categoryId: categoryDesserts.id,
         restaurantId: restaurant.id,
       },
     ],
   });
 
-  console.log("Seed terminé : super@restofocus.com et chef@bistro.com (mot de passe: password123)");
+  console.log("Seed terminé.");
+  console.log("Comptes disponibles :");
+  console.log("- super@restofocus.com / password123");
+  console.log("- chef@bistro.com / password123");
+  console.log("- client@restofocus.com / password123");
   console.log(`Restaurant : ${restaurant.nom} (${restaurant.slug})`);
 }
 

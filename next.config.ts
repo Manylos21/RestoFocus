@@ -11,8 +11,9 @@ const nextConfig: NextConfig = {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "style-src 'self' 'unsafe-inline'",
-      "script-src 'self'",
-      "connect-src 'self' https:",
+      // MODIFICATION ICI : On autorise 'unsafe-inline' et 'unsafe-eval' pour laisser React respirer
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'", 
+      "connect-src 'self' https: ws: localhost:*", // Ajout de ws: et localhost pour le rafraîchissement automatique
       "upgrade-insecure-requests",
     ].join("; ");
 
@@ -38,8 +39,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value:
-              "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+            value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
           },
           {
             key: "Strict-Transport-Security",

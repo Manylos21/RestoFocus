@@ -1,64 +1,173 @@
-import { auth } from "@/core/auth/auth";
-import { redirect } from "next/navigation";
-import {prisma} from "@/shared/lib/prisma";
+import Link from "next/link";
+import { prisma } from "@/shared/lib/prisma";
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+  }).format(value);
+}
 
 export default async function SuperAdminRestaurantsPage() {
-  const session = await auth();
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(now.getDate() - 30);
 
-  if (!session || session.user.role !== "SUPER_ADMIN") {
-    redirect("/");
-  }
-
-  // Requête Prisma optimisée : on récupère le restaurant, l'email du proprio et le nombre de plats en UN SEUL appel
   const restaurants = await prisma.restaurant.findMany({
     include: {
-      proprietaire: true,
+      proprietaire: {
+        select: {
+          prenom: true,
+          nom: true,
+          email: true,
+        },
+      },
       _count: {
-        select: { menuItems: true },
+        select: {
+          menuItems: true,
+          categories: true,
+          reservations: true,
+          orders: true,
+        },
+      },
+      reservations: {
+        where: {
+          createdAt: {
+            gte: thirtyDaysAgo,
+          },
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      },
+      orders: {
+        where: {
+          createdAt: {
+            gte: thirtyDaysAgo,
+          },
+        },
+        select: {
+          id: true,
+          totalAmount: true,
+        },
       },
     },
     orderBy: {
-      nom: 'asc'
-    }
+      nom: "asc",
+    },
   });
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Liste des Restaurants</h1>
+    <div className="space-y-8">
+      <section className="rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
+        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-orange-600">
+          Restaurants
+        </p>
+        <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
+          Vue comparative des établissements
+        </h1>
+        <p className="mt-3 max-w-3xl text-neutral-600">
+          Comparez les restaurants par volume de réservations, commandes, revenus
+          et qualité du catalogue.
+        </p>
+      </section>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-left text-sm text-gray-600">
-          <thead className="bg-gray-50 text-gray-700 font-medium border-b border-gray-100">
-            <tr>
-              <th className="px-6 py-4">Nom du restaurant</th>
-              <th className="px-6 py-4">Slug</th>
-              <th className="px-6 py-4">Propriétaire</th>
-              <th className="px-6 py-4">Nb. de plats</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {restaurants.map((restaurant) => (
-              <tr key={restaurant.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 font-medium text-gray-900">{restaurant.nom}</td>
-                <td className="px-6 py-4 font-mono text-xs text-gray-500">{restaurant.slug}</td>
-                <td className="px-6 py-4">{restaurant.proprietaire?.email || "N/A"}</td>
-                <td className="px-6 py-4">
-                  <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
+      <section className="grid gap-6 xl:grid-cols-2">
+        {restaurants.map((restaurant) => {
+          const confirmedReservations = restaurant.reservations.filter(
+            (reservation) => reservation.status === "CONFIRMED",
+          ).length;
+
+          const revenue30d = restaurant.orders.reduce((sum, order) => {
+            return sum + Number(order.totalAmount.toString());
+          }, 0);
+
+          const conversionRate =
+            restaurant.reservations.length > 0
+              ? Math.round((confirmedReservations / restaurant.reservations.length) * 100)
+              : 0;
+
+          return (
+            <article
+              key={restaurant.id}
+              className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm"
+            >
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-neutral-900">
+                    {restaurant.nom}
+                  </h2>
+                  <p className="mt-1 text-sm text-neutral-600">{restaurant.adresse}</p>
+                  <p className="mt-2 text-sm text-neutral-500">
+                    Propriétaire :{" "}
+                    {`${restaurant.proprietaire.prenom ?? ""} ${restaurant.proprietaire.nom ?? ""}`.trim() ||
+                      restaurant.proprietaire.email}
+                  </p>
+                  <p className="mt-1 text-sm text-neutral-500">Slug : {restaurant.slug}</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href={`/restaurant/${restaurant.slug}`}
+                    className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium transition hover:border-orange-500 hover:text-orange-600"
+                  >
+                    Voir la vitrine
+                  </Link>
+                  <Link
+                    href={`/super-admin/restaurants/${restaurant.id}`}
+                    className="rounded-full bg-orange-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-orange-700"
+                  >
+                    Voir le détail
+                  </Link>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-2xl bg-neutral-50 p-4">
+                  <p className="text-sm text-neutral-500">Menu</p>
+                  <p className="mt-1 text-2xl font-bold text-neutral-900">
                     {restaurant._count.menuItems}
-                  </span>
-                </td>
-              </tr>
-            ))}
-            {restaurants.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                  Aucun restaurant inscrit pour le moment.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    {restaurant._count.categories} catégorie(s)
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-neutral-50 p-4">
+                  <p className="text-sm text-neutral-500">Réservations (30 jours)</p>
+                  <p className="mt-1 text-2xl font-bold text-neutral-900">
+                    {restaurant.reservations.length}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    {confirmedReservations} confirmée(s)
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-neutral-50 p-4">
+                  <p className="text-sm text-neutral-500">Commandes (30 jours)</p>
+                  <p className="mt-1 text-2xl font-bold text-neutral-900">
+                    {restaurant.orders.length}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    Conversion réservation : {conversionRate} %
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-neutral-50 p-4">
+                  <p className="text-sm text-neutral-500">CA (30 jours)</p>
+                  <p className="mt-1 text-2xl font-bold text-neutral-900">
+                    {formatCurrency(revenue30d)}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    Réservation en ligne : {restaurant.acceptsReservations ? "Oui" : "Non"}
+                  </p>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </section>
     </div>
   );
 }

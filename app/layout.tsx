@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { AuthSessionProvider } from "@/app-providers/session-provider";
 import { getSiteOrigin } from "@/core/config/site-origin";
+import { CartProvider } from "@/shared/store/CartContext"; // <--- AJOUT ICI
 
 import "./globals.css";
 
@@ -34,7 +35,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AuthSessionProvider>{children}</AuthSessionProvider>
+        {/* On enveloppe tout avec le Auth ET le CartProvider */}
+        <AuthSessionProvider>
+          <CartProvider> {/* <--- AJOUT ICI */}
+            {children}
+          </CartProvider> {/* <--- AJOUT ICI */}
+        </AuthSessionProvider>
       </body>
     </html>
   );

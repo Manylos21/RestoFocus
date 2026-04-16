@@ -22,6 +22,32 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum TrafficSource {
+  DIRECT
+  ORGANIC_SEARCH
+  SOCIAL
+  EMAIL
+  REFERRAL
+  ADS
+  UNKNOWN
+}
+
+enum PublicEventType {
+  CTA_RESERVATION
+  CTA_DIRECTIONS
+  CTA_CONTACT
+  FAQ_VIEW
+  MENU_VIEW
+  CONTACT_SUBMIT
+}
+
 model User {
   id               String       @id @default(uuid()) @db.Uuid
   email            String       @unique
@@ -52,8 +78,19 @@ model Restaurant {
   categories     Category[]
   menuItems      MenuItem[]
   orders         Order[]     // <-- NOUVEAU : Lien vers les commandes reçues par le restaurant
+  reservations   Reservation[]
+  searchMetrics        SearchPerformanceDaily[]
+  publicVisits         PublicVisit[]
+  publicEvents         PublicEvent[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
+  telephone String?
+  emailPublic String?
+  servesCuisine String?
+  acceptsReservations Boolean @default(false)
+  reservationUrl String?
+  openingHours String?
+  googleMapsUrl String?
 
   @@index([proprietaireId])
 }
@@ -123,6 +160,85 @@ model OrderItem {
 
   @@index([orderId])
   @@index([menuItemId])
+}
+
+model Reservation {
+  id              String            @id @default(uuid()) @db.Uuid
+  restaurantId    String            @db.Uuid
+  nom             String
+  prenom          String
+  email           String
+  telephone       String?
+  reservationDate DateTime
+  guestCount      Int
+  commentaire     String?
+  status          ReservationStatus @default(PENDING)
+  source          String            @default("site_public")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([restaurantId])
+  @@index([status])
+  @@index([reservationDate])
+}
+
+model SearchPerformanceDaily {
+  id              String     @id @default(uuid()) @db.Uuid
+  restaurantId    String     @db.Uuid
+  date            DateTime   @db.Date
+  pagePath        String?
+  clicks          Int        @default(0)
+  impressions     Int        @default(0)
+  ctr             Float      @default(0)
+  averagePosition Float      @default(0)
+  source          String     @default("google_search_console")
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([restaurantId, date, pagePath])
+  @@index([restaurantId, date])
+}
+
+model PublicVisit {
+  id           String        @id @default(uuid()) @db.Uuid
+  restaurantId String?       @db.Uuid
+  sessionKey   String
+  pagePath     String
+  pageType     String
+  source       TrafficSource @default(UNKNOWN)
+  referrer     String?
+  userAgent    String?
+  createdAt    DateTime      @default(now())
+
+  restaurant Restaurant?  @relation(fields: [restaurantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  events     PublicEvent[]
+
+  @@index([restaurantId, createdAt])
+  @@index([sessionKey, createdAt])
+  @@index([pagePath, createdAt])
+  @@index([source, createdAt])
+}
+
+model PublicEvent {
+  id           String          @id @default(uuid()) @db.Uuid
+  visitId       String?         @db.Uuid
+  restaurantId  String?         @db.Uuid
+  sessionKey    String?
+  pagePath      String
+  type          PublicEventType
+  value         String?
+  createdAt     DateTime        @default(now())
+
+  visit       PublicVisit? @relation(fields: [visitId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  restaurant  Restaurant?  @relation(fields: [restaurantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([restaurantId, type, createdAt])
+  @@index([sessionKey, createdAt])
+  @@index([pagePath, createdAt])
 }
 
 // ==========================================

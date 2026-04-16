@@ -1,11 +1,19 @@
 "use client";
 
-import { LayoutDashboard, Settings2, UtensilsCrossed } from "lucide-react";
+import {
+  CalendarDays,
+  ClipboardList,
+  LayoutDashboard,
+  Settings2,
+  UtensilsCrossed,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV = [
   { href: "/espace-restaurant", label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/espace-restaurant/reservations", label: "Réservations", icon: CalendarDays },
+  { href: "/espace-restaurant/commandes", label: "Commandes", icon: ClipboardList },
   { href: "/espace-restaurant/menu", label: "Mon Menu", icon: UtensilsCrossed },
   { href: "/espace-restaurant/parametres", label: "Paramètres", icon: Settings2 },
 ] as const;
@@ -14,6 +22,7 @@ function isActive(pathname: string, href: string): boolean {
   if (href === "/espace-restaurant") {
     return pathname === "/espace-restaurant";
   }
+
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -21,29 +30,29 @@ export function RestaurantAdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col border-r border-zinc-200/80 bg-white shadow-sm">
-      <div className="flex h-16 items-center border-b border-zinc-100 px-5">
-        <span className="text-sm font-semibold tracking-tight text-zinc-900">
+    <aside className="w-full border-r border-neutral-200 bg-white lg:w-72">
+      <div className="border-b border-neutral-200 px-6 py-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600">
           RestoFocus
-        </span>
-        <span className="ml-2 rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-          Restaurant
-        </span>
+        </p>
+        <h2 className="mt-2 text-xl font-bold text-neutral-900">Restaurant</h2>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Navigation espace restaurant">
+
+      <nav className="flex flex-col gap-2 p-4">
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
+
           return (
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+              className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
                 active
-                  ? "bg-zinc-900 text-white shadow-sm"
-                  : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                  ? "bg-orange-50 text-orange-700"
+                  : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900"
               }`}
             >
-              <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+              <Icon className="h-5 w-5" />
               {label}
             </Link>
           );
